@@ -18,7 +18,7 @@ This stepsize parameter can be seen as the weighting on how much the current err
   
 - **Value Funciton**: The value function gives the value of each state. The *value* of a state provides a notion of how good it is to be in a given state, given the reward function (Thus goal, if written properly). This is obviously something that needs to be learned. If you know the value function, you can simply always choose to take an action that will end you up in the most valuable next states. The value is different than the reward, because value takes into consideration the future rewards that the agent has experienced in the past form this state. The degree to which it places importance on those future values will very by algorithm. The value function is essentially what the agent is hoping to learn.
 
-- **Model**: In RL there is always some form of environment. A model is used to encapsulate the transition dynamics of the environment, that is, it returns the next state that the agent will likely end up in if it takes an action in a given state. The policy defines which action SHOULD be taken in each state, the model can help show what new state will result from that acion in that state. It gives the TRANSITIONS. It is important to realize that the model IS NOT always the same as the environement. This is only true for simple or virtual problems. In real world applications you may still use a model to help learn, but this will likely be some idealization of reality. Learning from a model is called  **planning** and there are a whole host of planning algorithms. RL algorithms can be model-free or model-based. Some RL algorithms do not start with one but are actually able to devise and environement model on the fly and add a planning step on aswell! See Dyna-Q for an example.
+- **Model**: In RL there is always some form of environment. A model is used to encapsulate the transition dynamics of the environment, that is, it returns the next state that the agent will likely end up in if it takes an action in a given state. The policy defines which action SHOULD be taken in each state, the model can help show what new state will result from that acion in that state. It gives the TRANSITIONS. It is important to realize that the model IS NOT always the same as the environement. This is only true for simple or virtual problems. In real world applications you may still use a model to help learn, but this will likely be some idealization of reality. Learning from a model is called  **planning** and there are a whole host of planning algorithms. RL algorithms can be model-free or model-based. Some RL algorithms do not start with one but are actually able to devise and environement model on the fly and add a planning step on aswell! See Dyna-Q for an example. Model-free learning is usually more interested in the q(s, a) functions, or state-action value functions.
 
 - **Exploration vs. Exploitation:** This is a key tradeoff in RL algorithms that shows up again and again. A given algorithm must alternate between trying to choose actions it knows from experience to be valuable, whilst still probing (occasionally taking) unknown or less known state-actions to monitor for potential new valueble actions. Exploration is done to avoid getting stuck in a suboptimal policy at any given time. Exploitation is the heart of why we are doing RL. Should you go with what you already know works, or look for something better? You will often hear the word **greedy**
  or **act greedily** used to describe an algorithm / agent that heavily or exclusively exploits the current state-action of highest value.
@@ -56,6 +56,37 @@ $$
 $$
 v_\pi(s) = \sum_a \pi(a|s) \sum_{r, s'}P(s', r|s, a)(r + \lambda v_\pi(s'))
 $$
+
+- **Generalized Policy Iteration:** GPI is the essence of RL. It incrementally improves the policy that an agent used to select actions in any given state. This is quantified by saying that each time the agent runs through an episode, the value function of the policy will be greater or equal to the value function of the policy used the last time. GPI is a cycle. The agent uses a policy and evaluates it to find the V(s) for the whole episode. It then chooses its new policy to be: Act greedily with respect to the estimated value function of the last policy. So if any actions were found to be less optimal, they will no longer be taken! This can be repeated again and again until convergance to an optimal policy and therefore optimal value function. GPI will always result in a q(s, a) and v(s) that are better or jsut as good as the previous one, on every step. GPI has an inherent tug of war between policy evaluation and policy improvement. The goal is to have a policy that does not change upon evaluation. By evaluating the policy you make it no longer greedy with respect to its own value function (you changes V(s). V(s) no includes what you did right/wrong in the last episode). By improving the policy to be greedy with respect to this new thing you teh value function estimate is no longer correct! So you have to re evaluate and it all starts again!
+  ```
+  V(s) = random function 
+  pi = random actions
+
+  while(change in V(s) is significant)
+  {
+    foreach state in states
+    {
+      V(s) = Bellman(s)
+    }
+  }
+
+  foreach state in states
+  {
+    pi(s) = max actions according to v(s)
+  }
+
+  if(policy unchanges)
+  {
+    Must be done. Return.
+  }
+  ```
+
+- **Monte Carlo Methods:** MC methods are a set of algorithms to perform MODEL-FREE learning. This means that we do not have the transistion dynamics of the environment ($P(s', r|s, a)$) and therefore cannot use DP even if we wanted to. MC usually uses some form of random policy iteration to gather sampled returns from different states, and in so doing constructs a value funciton. MC will use the average of all the values it saw in previous episodes to update the value function over the states. This is used instead of the recursive bootstrapping in DP. MC can either be **First-visit** or **every-visit**. The former means that only the first visit to a state in a given episode is added to the average value of the state. The latter means every time it goes to that state (in one episode) is considered. Recall that a policy might go through the same state many times (loop back). The first visit assumption makes things simpler and less computationally heavy. Monte Carlo is very similar to DP, the main difference is the way that we *evaluate* the current policy. The policy improevement is over just the same )(greedy with respect to the value function).  
+- **State-Action Function:** As we know, the value function of a plicy gives the expected return from a given state following a policy. The state-action function gives the expected return from taking an action in a state, and then following the policy thereafter.
+
+- **Bellman Optimality Equation:** This equation assumes that you have an optimal value function. 
+
+- 
 
 <h1>Dynamic Programming</h1>
 
