@@ -103,6 +103,27 @@ $$
 $$
 V(S_t) = V(S_t) + \alpha[R_{t+1} + \gamma V(s_{t+1}) - V(S_t)]
 $$
+- **Function Approximation:** Function approximation introduces a new way to update the value of states. Previously and update only improved the value on one state. Functino approximation allows for the rewards recieved from one state-transition to affect the values of multiple states. Therefore the method can gain an understanding of features of the environment that might transcend states. To approximate a state-action value function, you use passed experience as the training data for some kind of supervised learning methods (neural nets, etc.). 
+- **Prediction Objective:** There is an inherent tradeoff from using function approximation instead of tabular methods. Since there is usually less weights than states, by changing the weights to make the estimate of one states value higher, we inevitably make the estimate of another state worse. This means we now need some way to tell which states are important, and which are not. To do so we have the mean square value error, which is computed using the probability distribution $\mu(s)$ that is chosen to represent how relevant a state is. It is often chosen to give an idea of how frequently a state is visited by the agent. With it we can compute a standard error of the estimated value function, where errors in states we give more of a fuck about are more heavily represented:
+
+$$
+VE(w)=\sum_{s\in S}\mu(s)[v_\pi(s)-v(s, w)]^2
+$$
+- This function now presents the goal of RL with function approximations: Find the weights w that will minimize this error. This will look like $VE(w^*) \leq VE(w)$. In function approximation you use update the weights in the direction of te gradient. This is called **gradient descent**. Below the value of $U_t$ is some approximation of the actual weight values $V(s, w)$. 
+ 
+$$
+w_{t+1}=w_t + \alpha [U_t + v(s, w_t)] \nabla v(s, w_t)
+$$
+- **Linear methods:** in this  case we assume that the value function can be found as a linear system over the states, and the weights correspond to the factors by which the value of each state is decided, therefore we can say:
+$$
+v(s, w) = w^T \cdot x(s)
+$$
+- One another simplification that comes from the linear feature vector is that the gradient simply becomes x(s), since all the other derivatives dissapear in each place. This in turn makes the weight update alot easier.
+- **Feature construction** for linear methods becomes very important, and can be a great way to add domain specific knowledge to the AI, molding what kind of state features it should be looking for. One of the limitations however of the linear form is that it cannot address dependencies betweeen the actions of the agent and multiple features. You cannot communicate "in presence of features A and B, do something, but not if only A or b". When you decide upon the feature vector you want to use, you make certain guesses about the types of state interactions that will likely go down between the states. The equations in the feature vector will form the basis of the feature space. 
+- **Coarse Coding** is a way to use binary features to assign value to a state. each feature is a subset of the state space, and wether or not the state exists within a particular subset gives that subset a 0 or 1. You can then "locate" the state in the space, and furthermore assign it  a value based on how many subsets it turns on. This works like a giant ven diagram of sorts. By varyingthe size and number of features you modify the type of generization that occurs over the state space. Furthermore the shape of the subsets of the space will shape the nature of the generalization further. Using different parameters in this sense will have a large effect on the way the function is approximated (will differentiate between levels of nuance).
+- Tile coding is the best modern form of course coding. To do it you basically break the space up into many "tilings" which are essentially indpendent shifted / resized grids. It is basically doing state aggregation to create a feature, but have the states aggregated in many different ways, one for each tiling. Then you see which meta state the true state ends up in, and together get a more resolved idea of where it is. Tiles will always be the same width, but just offset from eachother by some fraction of the width, therefore ensuring that each is represeted by the same number of tiles (features). This presents a powerful way to start dropping the size of the state space based on locality. It lowers the resolution, but is an interesting way of dropping resolution to save computation over large state spaces. The way that the tiling is offset is up to the designer and has large impacts on the performance of the system.
+- Hashing can be used to reduce memory requirments. This quite geniously maps random tiles of each tiling to a smaller subset (4:1 say would decrease memeory to a quarter) but the resolution is lost at the top level, so local nuance between states can often be preserved. You can think of varying the coarse coding partitions as changing the way that the learning system will generalize accross states. 
+- **Non-linear Function Approximation** is a general name for methods that attempt to condense the state space to a function approximation by the use of non-linear functions. The most popular method involves the use of artificial neural networks.**Feedforward ANN's** are networks that have inputs to each node that DO NOT depend on their outputs in any way. That is to say that there is no feedback loops in the networks. **Recurent NN's** are what we call networks that DO have those feedback loops. In RL we will not usually be using RNN's.
 
 <h1>Dynamic Programming</h1>
 
@@ -287,3 +308,4 @@ The problem with DP is that it needs a complete model of the environment in orde
 
 - **Simulated Experience** is the experience you get from planning, whereas real experiene is actually aquired from real experience with the world.
 - The exploration / exploitation trade-off for model based learning needs to try to explore to make sure its model is righ , but at the same time it needs to explore to make sure that its model is correct.
+
