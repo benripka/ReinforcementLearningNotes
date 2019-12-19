@@ -103,12 +103,20 @@ $$
 $$
 V(S_t) = V(S_t) + \alpha[R_{t+1} + \gamma V(s_{t+1}) - V(S_t)]
 $$
-- **Function Approximation:** Function approximation introduces a new way to update the value of states. Previously and update only improved the value on one state. Functino approximation allows for the rewards recieved from one state-transition to affect the values of multiple states. Therefore the method can gain an understanding of features of the environment that might transcend states. To approximate a state-action value function, you use passed experience as the training data for some kind of supervised learning methods (neural nets, etc.). 
-- **Prediction Objective:** There is an inherent tradeoff from using function approximation instead of tabular methods. Since there is usually less weights than states, by changing the weights to make the estimate of one states value higher, we inevitably make the estimate of another state worse. This means we now need some way to tell which states are important, and which are not. To do so we have the mean square value error, which is computed using the probability distribution $\mu(s)$ that is chosen to represent how relevant a state is. It is often chosen to give an idea of how frequently a state is visited by the agent. With it we can compute a standard error of the estimated value function, where errors in states we give more of a fuck about are more heavily represented:
+
+<h2>Prediction with Function Approximation</h2>
+
+- **Function Approximation:** Function approximation introduces a new way to update the value of states. Previously and update only improved the value on one state. Functino approximation allows for the rewards recieved from one state-transition to affect the values of multiple states. Therefore the method can gain an understanding of features of the environment that might transcend states. To approximate a state-action value function, you use passed experience as the training data for some kind of supervised learning methods (neural nets, etc.). The big thing with function approximation is that it does not compute the value of each state. It computes the value of many states according to a weight vector. Now Ultimatly the relationship between the weight vector and the state space can be anything, and is what will be used to define features of a state space. Some convenient functions of state space and weights will be given later (linear, tilecoding, FNN, etc.)
+- **Prediction Objective:** There is an inherent tradeoff from using function approximation instead of tabular methods. Since there is usually less weights than states, by changing the weights to make the estimate of one states value higher, we inevitably make the estimate of another state worse. This means we now need some way to tell which states are important, and which are not. To do so we have the mean square value error, which is computed using the probability distribution $\mu(s)$ that is chosen to represent how relevant a state is. It gives a probability for each state that will atenuate its value in the sum, putting less imporatance on that state. It is often chosen to give an idea of how frequently a state is visited by the agent. With it we can compute a standard error of the estimated value function, where errors in states we give more of a fuck about are more heavily represented:
 
 $$
 VE(w)=\sum_{s\in S}\mu(s)[v_\pi(s)-v(s, w)]^2
 $$
+- **Stochastic Gradient descent** is a really important algorithm that can be used to update the weights that are being used to represent the features of the state space, in order to improve the systems performance with respect to its loss function. The reason we cannot use the old value function updates is that in function approximation we evaluate the value of SETS of weighted states rather than individual states. So previously we would see that the agent got a better reward when it went to a given state so therefore that state would become more valuable. That was all well and good but NOW the only way we have to update a states value is by adjusting the weights, which will inherently effect the value of other states as well. In order to achieve an update that makes sense, we'll need to know how much varying a given weight effects the loss function. This can be achieved by the **gradient** of the weight vector in each state. So for each weight, we'll add to it the error in the estimated value function, attenuated by the amount that that specific weight actually effects the loss function. This is seen below:
+$$
+\begin{aligned} \mathbf{w}_{t+1} & \doteq \mathbf{w}_{t}-\frac{1}{2} \alpha \nabla\left[v_{\pi}\left(S_{t}\right)-\hat{v}\left(S_{t}, \mathbf{w}_{t}\right)\right]^{2} \\ &=\mathbf{w}_{t}+\alpha\left[v_{\pi}\left(S_{t}\right)-\hat{v}\left(S_{t}, \mathbf{w}_{t}\right)\right] \nabla \hat{v}\left(S_{t}, \mathbf{w}_{t}\right) \end{aligned}
+$$
+
 - This function now presents the goal of RL with function approximations: Find the weights w that will minimize this error. This will look like $VE(w^*) \leq VE(w)$. In function approximation you use update the weights in the direction of te gradient. This is called **gradient descent**. Below the value of $U_t$ is some approximation of the actual weight values $V(s, w)$. 
  
 $$
@@ -128,6 +136,38 @@ $$
 - FFNN's are trained usually by a gradient descent method that relies on some objective function that is able to rank the performance of the system. In the context of RL this may be the mean squared error in the value function estimation. To do this we need to get an idea of how a change in each weight will impact the change in the overall error. hellooooo partial derivatives? This should sound familiar. In a FFNN the algorithm for training is called backpropagation,  and consistes of a forward pass that will comput the new weights given each new input, and a backward pass that will compute the partial derivatives given the new weights, with repect to the error objective function.
 - **Overfitting** is an inherent problem in nonlinear function approximation, and is characterized by the inability to generalize concepts over a set of inputs that the system has not been trained on. The network is fit TO PERFECTLY to he training data and therefore cannot generalize. This is less of a problem for online RL as it has a constant stream of new data flowing in. The best way to avoid this is usually to increase the amount of training data that you have... Though obviously that can often be easier said than done. 
 - **Back-Propogation** is the most popular algorithm for computing training a neural network. It works by doing repeated 'forward passes' and 'backwards passes'. On the foreward pass, the inputs are put into the neural network and the activation values of each node in the internal and output layers are computed by the neural network in its current state (it finds a set of outputs like it should). These outputs are then put into a objective **evaluation function** that defines how wrong the output was. Now in the backwards pass, the partial derivative of the evaulation function with respect to EVERY weight in every layer is computed. This is how we get the gradient to eventiually descend. This is akin to going back and figuringout exactly how much each weight is responsible for the errors. The larger the partial derivatives with respect to a weight, the more effect changes to that weight have on the evaluated output! In short: Back propagation computes the gradient of the loss function with respect to every weight, for a given set of input output examples. 
+
+<h2>Control with Function Approximation</h2>
+
+- The goal of control with function approximation will be very similar to the tabular methods, in that we are trying to improve our policy ideally to some form of optimal by iteratively evaluating it, and updating it. 
+- The idea of parameterized value functions of state ($v(s,w)$) can be easily extended to the action-value case, where each state action pair is run through a function with the set of weights that will define features, and then evaluates them. After that improving a given state-action value is done by modifying the weights instead of the direct value of a state-action pair (we arn't keeping that anymore!). The general gradient descent update for an action value function is given below. In the function given $U_t$ is used in place of some current value of the state-action-w triple. It is the main thing that changes between SARSA, Q-learning, etc.:
+
+$$
+\mathbf{w}_{t+1} \doteq \mathbf{w}_{t}+\alpha\left[U_{t}-\hat{q}\left(S_{t}, A_{t}, \mathbf{w}_{t}\right)\right] \nabla \hat{q}\left(S_{t}, A_{t}, \mathbf{w}_{t}\right)
+$$
+  
+- **Average Reward** is a new way of dealing with the idea of reward in continuing tasks. It is an alternative to usign discouting values, that tell us how optimistic the agent will eb about later rewards. With average rewards the system is instead concerned with the average rate or returns is given as:
+
+$$
+r(\pi) \doteq \lim _{h \rightarrow \infty} \frac{1}{h} \sum_{t=1}^{h} \mathbb{E}\left[R_{t} | S_{0}, A_{0: t-1} \sim \pi\right]
+$$
+
+- Notice that this equation implies a fundamental assumption about MDP's called ergodisity. This is the idea that the effect of the agents starting place of an action taken from a state at any given time will eventually stop effecting the likelyhood that the agent end up in a given state. This probability ONLY depends fundamentallly on the policy and the transition probabilities. We can use the idea of a **steady state probability distribution** to describe the amount of time the agent spends in a given state (assuming the agent is well into its interation... ie. ergodicity is in effect) under the policy pi. using it we can show the average rate of return in another way:
+
+$$
+r(\pi)=\sum_{s} \mu_{\pi}(s) \sum_{a} \pi(a | s) \sum_{s^{\prime}, r} p\left(s^{\prime}, r | s, a\right) r
+$$
+- Under this new continuous case paradigm we must consider a new way to define the return from a policy. After all control is trying to fund a policy to maximize return, which in our case involves finding the policy that gets as close as possible to returning the average rate of reward (which defines the expected return under continuing conditions from that state based on the policy) in a given state. We can get this new return by computing the difference between the whitnessed reward and the average rate of reward under that policy. 
+$$
+G_{t} \doteq R_{t+1}-r(\pi)+R_{t+2}-r(\pi)+R_{t+3}-r(\pi)+\cdots
+$$
+
+- We call this new form of return the **differential return** and also refer to the versions of the algorithms that use it as the differntial variant of them. Therefore the new *differential* update equations that we know and love change and are no longer depended on the discount factor but instead the differential return:
+
+$$
+\begin{array}{l}{v_{\pi}(s)=\sum_{a} \pi(a | s) \sum_{r, s^{\prime}} p\left(s^{\prime}, r | s, a\right)\left[r-r(\pi)+v_{\pi}\left(s^{\prime}\right)\right]} \\ \\ {q_{\pi}(s, a)=\sum_{r, s^{\prime}} p\left(s^{\prime}, r | s, a\right)\left[r-r(\pi)+\sum_{a^{\prime}} \pi\left(a^{\prime} | s^{\prime}\right) q_{\pi}\left(s^{\prime}, a^{\prime}\right)\right]} \\\\ {v_{*}(s)=\max _{a} \sum_{r, s^{\prime}} p\left(s^{\prime}, r | s, a\right)\left[r-\max _{\pi} r(\pi)+v_{*}\left(s^{\prime}\right)\right], \text { and }} \\ \\{q_{*}(s, a)=\sum_{r, s^{\prime}} p\left(s^{\prime}, r | s, a\right)\left[r-\max _{\pi} r(\pi)+\max _{a^{\prime}} q_{*}\left(s^{\prime}, a^{\prime}\right)\right]} \\\\ {r, s^{\prime}}\end{array}
+$$
+
 
 <h1>Panning / Learning</h1>
 
